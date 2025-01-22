@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="icon" href="/resouces/lunch.png"/>
+    <link rel="icon" href="resouces/lunch.png">
     <title>Lucky Lunch Wheel</title>
     <style>
         body {
@@ -38,7 +38,7 @@
             background-color: #aaa;
             cursor: not-allowed;
         }
-        .pointer {
+        <!-- .pointer {
             position: absolute;
             top: -10px;
             left: 50%;
@@ -47,72 +47,106 @@
             height: 20px;
             background-color: red;
             clip-path: polygon(50% 0%, 0% 100%, 100% 100%);
+        } -->
+        .pointer {
+            position: absolute;
+            top: 50%;
+            left: 105%;
+            transform: translate(-50%, -50%) rotate(270deg);
+            width: 20px;
+            height: 20px;
+            background-color: red;
+            clip-path: polygon(50% 0%, 0% 100%, 100% 100%);
+            z-index: 5;
         }
     </style>
 </head>
-<body>
-    <h1>Lucky Lunch Wheel</h1>
-    <div class="wheel-container">
-        <div class="pointer"></div>
-        <canvas id="wheel"></canvas>
-    </div>
-    <button id="spin-btn">Spin the Wheel</button>
-
-    <script>
-        const options = ["Shi-Shi", "Pasta Via", "Under the Tree", "Tali Lama", "Pulkale", "Mexicana"];
-        const wheel = document.getElementById("wheel");
-        const ctx = wheel.getContext("2d");
-        const spinButton = document.getElementById("spin-btn");
-
-        const numOptions = options.length;
-        const sliceAngle = 2 * Math.PI / numOptions;
-        let rotation = 0;
-        let spinning = false;
-
-        function drawWheel() {
-            const colors = ["#FF5733", "#33FF57", "#3357FF", "#FF33A6", "#F4FF33", "#33FFF5"];
-            const radius = wheel.width / 2;
-            ctx.clearRect(0, 0, wheel.width, wheel.height);
-
-            for (let i = 0; i < numOptions; i++) {
-                ctx.beginPath();
-                ctx.moveTo(radius, radius);
-                ctx.arc(radius, radius, radius, sliceAngle * i, sliceAngle * (i + 1));
-                ctx.fillStyle = colors[i % colors.length];
-                ctx.fill();
-                ctx.stroke();
-                ctx.save();
-                ctx.translate(radius, radius);
-                ctx.rotate(sliceAngle * (i + 0.5));
-                ctx.fillStyle = "#fff";
-                ctx.font = "16px Arial";
-                ctx.fillText(options[i], radius / 2, 10);
-                ctx.restore();
+    <body>
+        <h1>Lucky Lunch Wheel</h1>
+        <div class="wheel-container">
+            <div class="pointer"></div>
+            <canvas id="wheel"></canvas>
+        </div>
+        <button id="spin-btn" disabled>Loading...</button>
+    
+        <script>
+            const wheel = document.getElementById("wheel");
+            const ctx = wheel.getContext("2d");
+            const spinButton = document.getElementById("spin-btn");
+            let options = [];
+    
+            async function fetchOptions() {
+                try {
+                    const response = await fetch("resouces/restaurants.json");
+                    if (!response.ok) {
+                        throw new Error("Failed to fetch options");
+                    }
+                    const data = await response.json();
+                    options = data || [];
+                    if (options.length > 0) {
+                        drawWheel();
+                        spinButton.disabled = false;
+                        spinButton.textContent = "Spin the Wheel";
+                    } else {
+                        spinButton.textContent = "No options available";
+                    }
+                } catch (error) {
+                    console.error("Error fetching data:", error);
+                    spinButton.textContent = "Failed to load options";
+                }
             }
-        }
-
-        function spinWheel() {
-            if (spinning) return;
-            spinning = true;
-            spinButton.disabled = true;
-            let spins = Math.floor(Math.random() * 10) + 5;
-            let stopAngle = Math.random() * sliceAngle;
-            rotation += spins * 2 * Math.PI + stopAngle;
-
-            wheel.style.transform = `rotate(${rotation}rad)`;
-
-            setTimeout(() => {
-                spinning = false;
-                spinButton.disabled = false;
-                const winningIndex = Math.floor((numOptions - (rotation % (2 * Math.PI)) / sliceAngle) % numOptions);
-                alert(`Lunch today is gonna be: ${options[winningIndex]}!`);
-            }, 4000);
-        }
-
-        wheel.width = 300;
-        wheel.height = 300;
-        drawWheel();
-        spinButton.addEventListener("click", spinWheel);
-    </script>
-</body>
+    
+            function drawWheel() {
+                const numOptions = options.length;
+                const sliceAngle = 2 * Math.PI / numOptions;
+                const colors = ["#FF5733", "#33FF57", "#3357FF", "#FF33A6", "#F4FF33", "#33FFF5"];
+                const radius = wheel.width / 2;
+    
+                ctx.clearRect(0, 0, wheel.width, wheel.height);
+    
+                for (let i = 0; i < numOptions; i++) {
+                    ctx.beginPath();
+                    ctx.moveTo(radius, radius);
+                    ctx.arc(radius, radius, radius, sliceAngle * i, sliceAngle * (i + 1));
+                    ctx.fillStyle = colors[i % colors.length];
+                    ctx.fill();
+                    ctx.stroke();
+                    ctx.save();
+                    ctx.translate(radius, radius);
+                    ctx.rotate(sliceAngle * (i + 0.5));
+                    ctx.fillStyle = "#fff";
+                    ctx.font = "16px Arial";
+                    ctx.fillText(options[i], radius / 2, 10);
+                    ctx.restore();
+                }
+            }
+    
+            let rotation = 0;
+            let spinning = false;
+    
+            function spinWheel() {
+                if (spinning) return;
+                spinning = true;
+                spinButton.disabled = true;
+    
+                let spins = Math.floor(Math.random() * 10) + 5;
+                let stopAngle = Math.random() * (2 * Math.PI / options.length);
+                rotation += spins * 2 * Math.PI + stopAngle;
+    
+                wheel.style.transform = `rotate(${rotation}rad)`;
+    
+                setTimeout(() => {
+                    spinning = false;
+                    spinButton.disabled = false;
+                    const winningIndex = Math.floor((options.length - (rotation % (2 * Math.PI)) / (2 * Math.PI / options.length)) % options.length);
+                    alert(`Today we eat: ${options[winningIndex]}!`);
+                }, 4000);
+            }
+    
+            wheel.width = 300;
+            wheel.height = 300;
+            fetchOptions();
+            spinButton.addEventListener("click", spinWheel);
+        </script>
+    </body>
 </html>
